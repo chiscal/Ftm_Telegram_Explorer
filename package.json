@@ -20,6 +20,7 @@
     "hex2dec": "^1.1.2",
     "moralis": "^2.14.3",
     "node-telegram-bot-api": "^0.61.0",
-    "nodemon": "^2.0.21"
+    "nodemon": "^2.0.21",
+    "ts-node": "^10.9.1"
   }
 }
