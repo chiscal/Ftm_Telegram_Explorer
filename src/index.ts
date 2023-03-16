@@ -280,7 +280,6 @@ bot.onText(/^⛽Gas$/, async (msg) => {
 
     let { message_id } = await bot.sendMessage(msg.chat.id, "⌛");
     let gasinfo = await Gas.fee();
-    bot.deleteMessage(msg.chat.id, message_id);
     let standard = `🚗<b>Standard</b>:\n        Gwei: ${gasinfo?.standard.gwei} \n        fee: $${gasinfo?.standard.usd}\n`;
     let slow = `🐢<b>Slow</b>:\n        Gwei: ${gasinfo?.slow.gwei}\n        fee: $${gasinfo?.slow.usd}\n`;
     let fast = `🔥<b>Fast</b>:\n        Gwei: ${gasinfo?.fast.gwei} \n        fee: $${gasinfo?.fast.usd}\n`;
