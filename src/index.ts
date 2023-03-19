@@ -123,79 +123,83 @@ bot.onText(/^🏦Account$/, async (msg: TelegramBot.Message) => {
     bot.sendMessage(chatId, "Input Wallet Address?", {
         reply_markup: { force_reply: true },
     }).then((resp: TelegramBot.Message) => {
-        bot.onReplyToMessage(resp.chat.id, resp.message_id, async (msg) => {
-            //@ts-ignore
-            let user = msg.from?.username;
-            console.log(user);
-            //@ts-ignore
-            delete txn_hash[user];
-            //@ts-ignore
-            delete txn_tokens[user];
-            //@ts-ignore
-            delete txn_pages[user];
-            //@ts-ignore
-            acct_pages[user] = 1;
-            //@ts-ignore
-            acct_addr[user] = String(msg.text);
-            let { message_id } = await bot.sendMessage(msg.chat.id, "⌛");
-            //@ts-ignore
-            Promise.all([
-                Account.getNativeBalance(String(msg.text)),
-                Account.getTokenBalances(String(msg.text)),
-            ]).then(async (account_info) => {
-                let ftm_bal = account_info[0];
-                let token_bal = account_info[1];
+        bot.onReplyToMessage(
+            resp.chat.id,
+            resp.message_id,
+            async (msg: TelegramBot.Message) => {
                 //@ts-ignore
-                acct_tokens[user] = token_bal;
+                let user = msg.from?.username;
+                console.log(user);
                 //@ts-ignore
-                let token_display =
+                delete txn_hash[user];
+                //@ts-ignore
+                delete txn_tokens[user];
+                //@ts-ignore
+                delete txn_pages[user];
+                //@ts-ignore
+                acct_pages[user] = 1;
+                //@ts-ignore
+                acct_addr[user] = String(msg.text);
+                let { message_id } = await bot.sendMessage(msg.chat.id, "⌛");
+                //@ts-ignore
+                Promise.all([
+                    Account.getNativeBalance(String(msg.text)),
+                    Account.getTokenBalances(String(msg.text)),
+                ]).then(async (account_info) => {
+                    let ftm_bal = account_info[0];
+                    let token_bal = account_info[1];
                     //@ts-ignore
-                    token_bal?.length > 1
-                        ? "<b>🪙Token Balance:</b>  ..."
-                        : `<b>📍Token Address</b>: ${
-                              token_bal?.[0].token_address
-                          }\n\n<b>🔣Symbol</b>: ${
-                              token_bal?.[0].symbol
-                          }\n\n<b>💵Balance</b>: ${
-                              Number(token_bal?.[0].balance) /
-                              Math.pow(10, Number(token_bal?.[0].decimals))
-                          }`;
-                let account_message =
-                    ftm_bal != undefined && token_bal !== undefined
-                        ? `<b>Wallet Address</b>: ${msg.text}\n\n🪙<b>Ftm Balance</b>: ${ftm_bal}\n\n${token_display}`
-                        : "An Error Occurred😔";
-                bot.deleteMessage(msg.chat.id, message_id).then(() => {
+                    acct_tokens[user] = token_bal;
                     //@ts-ignore
-                    bot.sendMessage(
-                        msg.chat.id,
-                        account_message,
+                    let token_display =
                         //@ts-ignore
                         token_bal?.length > 1
-                            ? {
-                                  reply_markup: {
-                                      inline_keyboard: [
-                                          [
-                                              {
-                                                  text: "View Tokens",
-                                                  callback_data:
-                                                      "account_token_bal",
-                                              },
+                            ? "<b>🪙Token Balance:</b>  ..."
+                            : `<b>📍Token Address</b>: ${
+                                  token_bal?.[0].token_address
+                              }\n\n<b>🔣Symbol</b>: ${
+                                  token_bal?.[0].symbol
+                              }\n\n<b>💵Balance</b>: ${
+                                  Number(token_bal?.[0].balance) /
+                                  Math.pow(10, Number(token_bal?.[0].decimals))
+                              }`;
+                    let account_message =
+                        ftm_bal != undefined && token_bal !== undefined
+                            ? `<b>Wallet Address</b>: ${msg.text}\n\n🪙<b>Ftm Balance</b>: ${ftm_bal}\n\n${token_display}`
+                            : "An Error Occurred😔";
+                    bot.deleteMessage(msg.chat.id, message_id).then(() => {
+                        //@ts-ignore
+                        bot.sendMessage(
+                            msg.chat.id,
+                            account_message,
+                            //@ts-ignore
+                            token_bal?.length > 1
+                                ? {
+                                      reply_markup: {
+                                          inline_keyboard: [
+                                              [
+                                                  {
+                                                      text: "View Tokens",
+                                                      callback_data:
+                                                          "account_token_bal",
+                                                  },
+                                              ],
+                                              [
+                                                  {
+                                                      text: "Check Explorer",
+                                                      url: `https://ftmscan.com/address/${msg.text}`,
+                                                  },
+                                              ],
                                           ],
-                                          [
-                                              {
-                                                  text: "Check Explorer",
-                                                  url: `https://ftmscan.com/address/${msg.text}`,
-                                              },
-                                          ],
-                                      ],
-                                  },
-                                  parse_mode: "HTML",
-                              }
-                            : { parse_mode: "HTML" }
-                    );
+                                      },
+                                      parse_mode: "HTML",
+                                  }
+                                : { parse_mode: "HTML" }
+                        );
+                    });
                 });
-            });
-        });
+            }
+        );
     });
 });
 
@@ -219,20 +223,30 @@ bot.onText(/^🪙Token$/, (msg: TelegramBot.Message) => {
     bot.sendMessage(chatId, "Input Token Address?", {
         reply_markup: { force_reply: true },
     }).then((resp: TelegramBot.Message) => {
-        bot.onReplyToMessage(resp.chat.id, resp.message_id, async (msg) => {
-            let { message_id } = await bot.sendMessage(msg.chat.id, "⌛");
-            let info = await Token.getTokenInfo(String(msg.text), "mainnet");
-            bot.deleteMessage(msg.chat.id, message_id).then(() => {
-                let token_info =
-                    info != undefined
-                        ? `<b>💳Name</b>: ${info.name} \n\n<b>🔣Symbol</b>: ${info.symbol} \n\n<b>➗Decimals</b>: ${info.decimals} \n\n<b>🏦Total Supply</b>: ${info.totalSupply}`
-                        : "An Error Occurred😔";
-                bot.sendMessage(msg.chat.id, token_info, {
-                    reply_markup: { keyboard: nav.home, resize_keyboard: true },
-                    parse_mode: "HTML",
+        bot.onReplyToMessage(
+            resp.chat.id,
+            resp.message_id,
+            async (msg: TelegramBot.Message) => {
+                let { message_id } = await bot.sendMessage(msg.chat.id, "⌛");
+                let info = await Token.getTokenInfo(
+                    String(msg.text),
+                    "mainnet"
+                );
+                bot.deleteMessage(msg.chat.id, message_id).then(() => {
+                    let token_info =
+                        info != undefined
+                            ? `<b>💳Name</b>: ${info.name} \n\n<b>🔣Symbol</b>: ${info.symbol} \n\n<b>➗Decimals</b>: ${info.decimals} \n\n<b>🏦Total Supply</b>: ${info.totalSupply}`
+                            : "An Error Occurred😔";
+                    bot.sendMessage(msg.chat.id, token_info, {
+                        reply_markup: {
+                            keyboard: nav.home,
+                            resize_keyboard: true,
+                        },
+                        parse_mode: "HTML",
+                    });
                 });
-            });
-        });
+            }
+        );
     });
 });
 
@@ -428,70 +442,74 @@ bot.onText(/^🎫Transaction$/, (msg: TelegramBot.Message) => {
     bot.sendMessage(chatId, "Input Transaction Hash?", {
         reply_markup: { force_reply: true },
     }).then((resp: TelegramBot.Message) => {
-        bot.onReplyToMessage(resp.chat.id, resp.message_id, async (msg) => {
-            //@ts-ignore
-            let user = msg.from?.username;
-            console.log(user);
-            //@ts-ignore
-            delete acct_addr[user];
-            //@ts-ignore
-            delete acct_tokens[user];
-            //@ts-ignore
-            delete acct_pages[user];
-            //@ts-ignore
-            txn_pages[user] = 1;
-            //@ts-ignore
-            txn_hash[user] = String(msg.text);
-            let { message_id } = await bot.sendMessage(msg.chat.id, "⌛");
-            Transaction.getTxnInfo(String(msg.text), "mainnet").then(
-                async (txn) => {
-                    //@ts-ignore
-                    txn_tokens[user] = txn?.tokenTransfers;
-                    //@ts-ignore
-                    let token_txn =
+        bot.onReplyToMessage(
+            resp.chat.id,
+            resp.message_id,
+            async (msg: TelegramBot.Message) => {
+                //@ts-ignore
+                let user = msg.from?.username;
+                console.log(user);
+                //@ts-ignore
+                delete acct_addr[user];
+                //@ts-ignore
+                delete acct_tokens[user];
+                //@ts-ignore
+                delete acct_pages[user];
+                //@ts-ignore
+                txn_pages[user] = 1;
+                //@ts-ignore
+                txn_hash[user] = String(msg.text);
+                let { message_id } = await bot.sendMessage(msg.chat.id, "⌛");
+                Transaction.getTxnInfo(String(msg.text), "mainnet").then(
+                    async (txn) => {
                         //@ts-ignore
-                        txn?.tokenTransfers.length > 1
-                            ? "<b>🪙Token Transfers:</b> ..."
-                            : //@ts-ignore
-                              `<b>🪙Token Transfer</b>: \n          <b>🔣Symbol</b>: ${txn?.tokenTransfers.name}\n        <b>☝️From</b>: ${txn?.tokenTransfers.from}\n        <b>👇To</b>: ${txn?.tokenTransfers.to}\n         <b>💵Amount</b>: ${txn?.tokenTransfers.amount}`;
-
-                    let txn_message =
-                        txn != undefined
-                            ? `<b>🔄Status:</b>${txn.status}\n\n<b>☝️Sender:</b> ${txn.sender}\n\n<b>👇Reciever:</b> ${txn.reciever}\n\n<b>💵FTM Amount:</b> ${txn.amount}\n\n<b>⌚Date:</b> ${txn.time}\n\n<b>👛Fee</b>: ${txn.fee}\n\n${token_txn}`
-                            : "An Error Occurred😔";
-                    bot.deleteMessage(msg.chat.id, message_id).then(() => {
+                        txn_tokens[user] = txn?.tokenTransfers;
                         //@ts-ignore
-                        bot.sendMessage(
-                            msg.chat.id,
-                            txn_message,
+                        let token_txn =
                             //@ts-ignore
                             txn?.tokenTransfers.length > 1
-                                ? {
-                                      reply_markup: {
-                                          inline_keyboard: [
-                                              [
-                                                  {
-                                                      text: "View Token Transfers",
-                                                      callback_data:
-                                                          "txn_token_transfers",
-                                                  },
+                                ? "<b>🪙Token Transfers:</b> ..."
+                                : //@ts-ignore
+                                  `<b>🪙Token Transfer</b>: \n          <b>🔣Symbol</b>: ${txn?.tokenTransfers.name}\n        <b>☝️From</b>: ${txn?.tokenTransfers.from}\n        <b>👇To</b>: ${txn?.tokenTransfers.to}\n         <b>💵Amount</b>: ${txn?.tokenTransfers.amount}`;
+
+                        let txn_message =
+                            txn != undefined
+                                ? `<b>🔄Status:</b>${txn.status}\n\n<b>☝️Sender:</b> ${txn.sender}\n\n<b>👇Reciever:</b> ${txn.reciever}\n\n<b>💵FTM Amount:</b> ${txn.amount}\n\n<b>⌚Date:</b> ${txn.time}\n\n<b>👛Fee</b>: ${txn.fee}\n\n${token_txn}`
+                                : "An Error Occurred😔";
+                        bot.deleteMessage(msg.chat.id, message_id).then(() => {
+                            //@ts-ignore
+                            bot.sendMessage(
+                                msg.chat.id,
+                                txn_message,
+                                //@ts-ignore
+                                txn?.tokenTransfers.length > 1
+                                    ? {
+                                          reply_markup: {
+                                              inline_keyboard: [
+                                                  [
+                                                      {
+                                                          text: "View Token Transfers",
+                                                          callback_data:
+                                                              "txn_token_transfers",
+                                                      },
+                                                  ],
+                                                  [
+                                                      {
+                                                          text: "Check Explorer",
+                                                          url: `https://ftmscan.com/tx/${msg.text}`,
+                                                      },
+                                                  ],
                                               ],
-                                              [
-                                                  {
-                                                      text: "Check Explorer",
-                                                      url: `https://ftmscan.com/tx/${msg.text}`,
-                                                  },
-                                              ],
-                                          ],
-                                      },
-                                      parse_mode: "HTML",
-                                  }
-                                : { parse_mode: "HTML" }
-                        );
-                    });
-                }
-            );
-        });
+                                          },
+                                          parse_mode: "HTML",
+                                      }
+                                    : { parse_mode: "HTML" }
+                            );
+                        });
+                    }
+                );
+            }
+        );
     });
 });
 
